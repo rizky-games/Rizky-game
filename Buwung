@@ -1,0 +1,186 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLAFFY CHICKEN</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#182238;color:white;
+ font-family:Arial;text-align:center;
+ overflow:hidden;
+}
+h1{color:#ffcc35;margin:15px 0 5px}
+#game{
+ display:block;margin:10px auto;
+ width:min(95vw,400px);
+ height:auto;
+ border:4px solid white;
+ border-radius:12px;
+ background:#70d8ff;
+ touch-action:none;
+}
+button{
+ background:#ffbd24;border:0;border-radius:12px;
+ padding:13px 25px;font-size:18px;
+ font-weight:bold;margin:8px;
+}
+#over{
+ display:none;position:fixed;inset:0;
+ background:#000b;align-items:center;
+ justify-content:center;
+}
+.panel{
+ background:#253653;padding:25px;
+ border-radius:20px;width:85%;max-width:350px;
+}
+#roast{color:#ffcc35;font-size:19px;font-weight:bold}
+</style>
+</head>
+<body>
+
+<h1>🐔 PLAFFY CHICKEN</h1>
+<p>Terbanglah ayam! Jangan sampai jadi ayam geprek!</p>
+
+<canvas id="game" width="400" height="550"></canvas>
+
+<div>
+ Skor: <span id="score">0</span> |
+ Rekor: <span id="best">0</span>
+</div>
+<button onclick="flap()">🐔 TERBANG!</button>
+
+<div id="over">
+ <div class="panel">
+  <h1>GAME OVER 💀</h1>
+  <div style="font-size:65px">🐔</div>
+  <p id="roast"></p>
+  <p>Skor kamu: <span id="final">0</span></p>
+  <button onclick="restart()">MAIN LAGI</button>
+ </div>
+</div>
+
+<script>
+const c=document.getElementById("game");
+const ctx=c.getContext("2d");
+
+let chicken, pipes, score, running, frame;
+let best=Number(localStorage.getItem("chickenBest"))||0;
+document.getElementById("best").textContent=best;
+
+const roasts=[
+ "Ayam aja bisa terbang, kamu kok cuma rebahan? 😂",
+ "Skill kamu lebih rendah dari telur pecah! 🥚",
+ "Burung punya sayap, kamu punya alasan! 🤣",
+ "NASA melihat permainanmu dan langsung pensiun.",
+ "Ayam tetangga lebih jago daripada kamu!",
+ "Waduh, ayamnya lupa cara terbang!",
+ "Main game atau latihan jadi nugget? 🍗",
+ "Skor segitu? Kalkulator aja malu!"
+];
+
+function restart(){
+ chicken={x:90,y:250,v:0};
+ pipes=[];
+ score=0;
+ frame=0;
+ running=true;
+ document.getElementById("score").textContent=0;
+ document.getElementById("over").style.display="none";
+ loop();
+}
+
+function flap(){
+ if(!running)return;
+ chicken.v=-6.5;
+}
+
+c.addEventListener("pointerdown",e=>{
+ e.preventDefault();
+ flap();
+});
+
+function endGame(){
+ if(!running)return;
+ running=false;
+ document.getElementById("roast").textContent=
+ roasts[Math.floor(Math.random()*roasts.length)];
+ document.getElementById("final").textContent=score;
+ document.getElementById("over").style.display="flex";
+}
+
+function loop(){
+ if(!running)return;
+ frame++;
+
+ ctx.clearRect(0,0,400,550);
+
+ // Langit dan tanah
+ ctx.fillStyle="#70d8ff";
+ ctx.fillRect(0,0,400,550);
+ ctx.fillStyle="#65c94b";
+ ctx.fillRect(0,510,400,40);
+
+ // Awan
+ ctx.fillStyle="white";
+ ctx.font="35px Arial";
+ ctx.fillText("☁️",40,100);
+ ctx.fillText("☁️",280,180);
+
+ // Ayam
+ chicken.v+=0.35;
+ chicken.y+=chicken.v;
+ ctx.save();
+ ctx.translate(chicken.x,chicken.y);
+ ctx.rotate(Math.min(0.7,Math.max(-0.5,chicken.v*0.07)));
+ ctx.font="42px Arial";
+ ctx.textAlign="center";
+ ctx.fillText("🐔",0,15);
+ ctx.restore();
+
+ // Pipa
+ if(frame%95===0){
+ let gap=155;
+ let top=Math.random()*220+35;
+ pipes.push({x:410,top:top,bottom:top+gap,passed:false});
+ }
+
+ pipes.forEach(p=>{
+ p.x-=2.8;
+
+ ctx.fillStyle="#20a83e";
+ ctx.fillRect(p.x,0,55,p.top);
+ ctx.fillRect(p.x,p.bottom,55,510-p.bottom);
+
+ ctx.fillStyle="#16852f";
+ ctx.fillRect(p.x-5,p.top-18,65,18);
+ ctx.fillRect(p.x-5,p.bottom,65,18);
+
+ // Tabrakan
+ if(chicken.x+17>p.x &&
+ chicken.x-17<p.x+55 &&
+ (chicken.y-15<p.top || chicken.y+15>p.bottom)){
+ endGame();
+ }
+
+ if(!p.passed && p.x+55<chicken.x){
+ p.passed=true;
+ score++;
+ document.getElementById("score").textContent=score;
+ }
+ });
+
+ pipes=pipes.filter(p=>p.x>-70);
+
+ // Batas layar
+ if(chicken.y>490||chicken.y<0)endGame();
+
+ if(running)requestAnimationFrame(loop);
+}
+
+restart();
+</script>
+</body>
+</html>
